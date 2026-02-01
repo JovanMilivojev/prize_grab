@@ -17,11 +17,11 @@ class PrizeGrabApp extends StatelessWidget {
     return MaterialApp(
       title: 'Prize Grab',
       debugShowCheckedModeBanner: false,
-      initialRoute: main_menu.route,
+      initialRoute: MainMenuScreen.route,
       routes: {
         MainMenuScreen.route: (_) => const MainMenuScreen(),
         GameScreen.route: (_) => const GameScreen(),
-        Leaderboard.route: (_) => const LeaderboardScreen(),
+        Leaderboard.route: (_) => const Leaderboard(),
         ShopScreen.route: (_) => const ShopScreen(),
         LoginScreen.route: (_) => const LoginScreen(),
       },
