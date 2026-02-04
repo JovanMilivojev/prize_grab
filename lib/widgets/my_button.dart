@@ -7,16 +7,26 @@ class MyButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.isPrimary = false,
+    this.isIcy = false,
   });
 
   final String text;
   final VoidCallback onPressed;
   final IconData? icon;
   final bool isPrimary;
+  final bool isIcy;
 
   @override
   Widget build(BuildContext context) {
-    final textColor = isPrimary ? Colors.white : const Color(0xFF1D5DFF);
+    final Color backgroundColor = isPrimary
+        ? const Color(0xFF4FC3F7)
+        : (isIcy ? const Color(0xFFEAF6FF) : Colors.white);
+
+    final Color textColor = isPrimary ? Colors.white : const Color(0xFF2E5E7A);
+
+    final Color borderColor = isPrimary
+        ? const Color(0xFF81D4FA)
+        : const Color(0xFFCFEAFF);
 
     return SizedBox(
       width: double.infinity,
@@ -24,11 +34,13 @@ class MyButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          elevation: 10,
+          elevation: isPrimary ? 12 : 6,
           shadowColor: Colors.black26,
-          backgroundColor: isPrimary ? const Color(0xFFE40018) : Colors.white,
+          backgroundColor: backgroundColor,
           foregroundColor: textColor,
-          shape: const StadiumBorder(),
+          shape: StadiumBorder(
+            side: BorderSide(color: borderColor, width: 1.2),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

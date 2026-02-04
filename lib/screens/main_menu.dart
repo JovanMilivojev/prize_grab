@@ -26,7 +26,7 @@ class MainMenuScreen extends StatelessWidget {
             child: Container(
               color: const Color(
                 0xFFB3E5FC,
-              ).withOpacity(0.25), // ledeno-plavi overlay
+              ).withOpacity(0.18), // ledeno-plavi overlay
             ),
           ),
           // SADRŽAJ EKRANA (naslov + dugmad)
@@ -39,34 +39,13 @@ class MainMenuScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Prize Grab',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-
-                          shadows: [
-                            Shadow(
-                              blurRadius: 10,
-                              color: Colors.black38,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
+                      Image.asset(
+                        'assets/images/PrizeGrabLogo2.png',
+                        width: 320,
                       ),
 
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Main Menu',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      const SizedBox(height: 40),
+
                       // GLAVNO DUGME
                       MyButton(
                         text: 'Play Game',
@@ -80,6 +59,7 @@ class MainMenuScreen extends StatelessWidget {
                       MyButton(
                         text: 'Leaderboard',
                         icon: Icons.emoji_events_outlined,
+                        isIcy: true,
                         onPressed: () =>
                             Navigator.pushNamed(context, Leaderboard.route),
                       ),
@@ -91,6 +71,7 @@ class MainMenuScreen extends StatelessWidget {
                         icon: Icons.storefront_outlined,
                         onPressed: () =>
                             Navigator.pushNamed(context, ShopScreen.route),
+                        isIcy: true,
                       ),
 
                       const SizedBox(height: 14),
@@ -100,6 +81,7 @@ class MainMenuScreen extends StatelessWidget {
                         icon: Icons.login,
                         onPressed: () =>
                             Navigator.pushNamed(context, LoginScreen.route),
+                        isIcy: true,
                       ),
 
                       const SizedBox(height: 60),
