@@ -48,6 +48,7 @@ class MainMenuScreen extends StatelessWidget {
 
                       // GLAVNO DUGME
                       MyButton(
+                        decorAsset: 'assets/images/snowEdited.png',
                         text: 'Play Game',
                         isPrimary: true, // crveni stil
                         onPressed: () =>
@@ -58,6 +59,10 @@ class MainMenuScreen extends StatelessWidget {
 
                       MyButton(
                         text: 'Leaderboard',
+                        decorAsset: 'assets/images/iceEdited.png',
+                        decorWidth: 90,
+                        decorLeft: -18,
+                        decorTop: -6,
                         icon: Icons.emoji_events_outlined,
                         isIcy: true,
                         onPressed: () =>
@@ -68,6 +73,10 @@ class MainMenuScreen extends StatelessWidget {
 
                       MyButton(
                         text: 'Shop',
+                        decorAsset: 'assets/images/iceEdited.png',
+                        decorWidth: 90,
+                        decorLeft: -18,
+                        decorTop: -6,
                         icon: Icons.storefront_outlined,
                         onPressed: () =>
                             Navigator.pushNamed(context, ShopScreen.route),
@@ -78,6 +87,10 @@ class MainMenuScreen extends StatelessWidget {
 
                       MyButton(
                         text: 'Login',
+                        decorAsset: 'assets/images/iceEdited.png',
+                        decorWidth: 90,
+                        decorLeft: -18,
+                        decorTop: -6,
                         icon: Icons.login,
                         onPressed: () =>
                             Navigator.pushNamed(context, LoginScreen.route),
