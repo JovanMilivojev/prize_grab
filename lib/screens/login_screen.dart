@@ -1,11 +1,353 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../widgets/winter_background.dart';
+import 'gamescreen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   static const route = '/login';
 
   @override
+  State<LoginScreen> createState() => LoginScreenState();
+}
+
+class LoginScreenState extends State<LoginScreen> {
+  bool isLogin = true;
+  // kljuc za validaciju
+  final formKey = GlobalKey<FormState>();
+  final email = TextEditingController();
+  final password = TextEditingController();
+  final user = TextEditingController();
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    user.dispose();
+    super.dispose();
+  }
+
+  //Klik na login
+  void submit() {
+    if (formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isLogin ? 'Login (demo) uspesan' : 'Registracija (demo) uspesna',
+          ),
+        ),
+      );
+    }
+  }
+
+  // gost nema nalog , gameScreen ruta
+  void continueAsGuest() {
+    Navigator.pushReplacementNamed(context, GameScreen.route);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Login screen')));
+    return Scaffold(
+      body: WinterBackground(
+        child: Stack(
+          children: [
+            /// BACK DUGME (gore levo)
+            Positioned(
+              left: 12,
+              top: 12,
+              child: Material(
+                color: Colors.white.withOpacity(0.85),
+                shape: const CircleBorder(),
+                elevation: 6,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Icon(Icons.arrow_back, color: Color(0xFF1565C0)),
+                  ),
+                ),
+              ),
+            ),
+
+            // Login / Register forma
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 24,
+                          color: Colors.black26,
+                          offset: Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        /// LOGIN / REGISTER TAB
+                        Segment(
+                          leftText: 'Login',
+                          rightText: 'Register',
+                          isLeftSelected: isLogin,
+                          onChanged: (v) => setState(() => isLogin = v),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Forma (polja i validacija)
+                        Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // USERNAME samo kad je Register tab
+                              if (!isLogin) ...[
+                                const Label('Username'),
+                                IcyField(
+                                  controller: user,
+                                  hint: 'Enter your username',
+                                  validator: (v) {
+                                    if ((v ?? '').trim().length < 3) {
+                                      return 'Username min 3 karaktera';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // email
+                              const Label('Email'),
+                              IcyField(
+                                controller: email,
+                                hint: 'Enter your email',
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) {
+                                  final value = (v ?? '').trim();
+                                  if (value.isEmpty) return 'Email je obavezan';
+                                  if (!value.contains('@')) {
+                                    return 'Unesi validan email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+
+                              // password
+                              const Label('Password'),
+                              IcyField(
+                                controller: password,
+                                hint: 'Enter your password',
+                                obscureText: true,
+                                validator: (v) {
+                                  final value = (v ?? '');
+                                  if (value.isEmpty)
+                                    return 'Lozinka je obavezna';
+                                  if (value.length < 6) {
+                                    return 'Lozinka min 6 karaktera';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 18),
+
+                              // GLAVNO FUGME: LOGIN/CREATE ACC
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton(
+                                  onPressed: submit,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4FC3F7),
+                                    foregroundColor: Colors.white,
+                                    elevation: 10,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    isLogin ? 'Login' : 'Create Account',
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              // Continue as Guest link
+                              TextButton(
+                                onPressed: continueAsGuest,
+                                child: const Text(
+                                  'Continue as Guest',
+                                  style: TextStyle(
+                                    color: Color(0xFF1E88E5),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// POMOCNI WIDGETI
+
+class Segment extends StatelessWidget {
+  const Segment({
+    super.key,
+    required this.leftText,
+    required this.rightText,
+    required this.isLeftSelected,
+    required this.onChanged,
+  });
+
+  final String leftText;
+  final String rightText;
+  final bool isLeftSelected;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF6FF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegBtn(
+              text: leftText,
+              selected: isLeftSelected,
+              onTap: () => onChanged(true),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _SegBtn(
+              text: rightText,
+              selected: !isLeftSelected,
+              onTap: () => onChanged(false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegBtn extends StatelessWidget {
+  const _SegBtn({
+    required this.text,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String text;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF4FC3F7) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF1565C0),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class Label extends StatelessWidget {
+  const Label(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFF1565C0),
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class IcyField extends StatelessWidget {
+  const IcyField({
+    super.key,
+    required this.controller,
+    required this.hint,
+    this.keyboardType,
+    this.validator,
+    this.obscureText = false,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final bool obscureText;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: const Color(0xFFF3F3F3),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
   }
 }
