@@ -1,50 +1,79 @@
 import 'package:flutter/material.dart';
 import '../widgets/winter_background.dart';
 import '../widgets/hud_card.dart';
-import '../widgets/joystick_widget.dart';
 import '../widgets/round_menu_button.dart';
 import 'main_menu.dart';
+import '../igrica/prize_grab_game.dart';
+import 'package:flame/game.dart';
 
-class GameScreen extends StatelessWidget {
+class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
   static const route = '/game';
+
+  @override
+  State<GameScreen> createState() => GameScreenState();
+}
+
+class GameScreenState extends State<GameScreen> {
+  late final PrizeGrabGame game;
+
+  @override
+  void initState() {
+    super.initState();
+    game = PrizeGrabGame();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: WinterBackground(
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // GAME AREA PLACEHOLDER
-            Center(
-              child: Image.asset(
-                'assets/images/FullBodySanta.png',
-                height: 160,
-                fit: BoxFit.contain,
-              ),
-            ),
-            Positioned(
-              left: 90,
-              top: 140,
-              child: Image.asset('assets/images/NormalGift.png', width: 56),
-            ),
-            Positioned(
-              right: 120,
-              top: 180,
-              child: Image.asset('assets/images/SpecialGift.png', width: 54),
-            ),
-            Positioned(
-              right: 200,
-              bottom: 180,
-              child: Image.asset('assets/images/ICECUBE.png', width: 48),
+            GameWidget(
+              game: game,
+              loadingBuilder: (context) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF1E3A8A)),
+                );
+              },
+              errorBuilder: (context, error) {
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      'Game error: $error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF1E3A8A),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
 
             // SCORE HUD
-            const Positioned(
+            Positioned(
               left: 14,
               top: 14,
-              child: HudCard(title: 'Your score', value: '0'),
+              child: ValueListenableBuilder<int>(
+                valueListenable: game.score,
+                builder: (context, value, _) {
+                  return HudCard(title: 'Your score', value: '$value');
+                },
+              ),
             ),
 
             // BACK TO HOME
@@ -64,10 +93,15 @@ class GameScreen extends StatelessWidget {
             ),
 
             // TIME HUD
-            const Positioned(
+            Positioned(
               right: 14,
               top: 14,
-              child: HudCard(title: 'Time', value: '0s'),
+              child: ValueListenableBuilder<int>(
+                valueListenable: game.time,
+                builder: (context, value, _) {
+                  return HudCard(title: 'Time', value: '${value}s');
+                },
+              ),
             ),
 
             // MENU BUTTON
@@ -84,8 +118,64 @@ class GameScreen extends StatelessWidget {
               ),
             ),
 
-            // JOYSTICK UI
-            const Positioned(left: 16, bottom: 18, child: JoystickWidget()),
+            // GAME OVER OVERLAY
+            ValueListenableBuilder<bool>(
+              valueListenable: game.isGameOver,
+              builder: (context, isOver, _) {
+                if (!isOver) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: Container(
+                        width: 280,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [
+                            BoxShadow(
+                              blurRadius: 20,
+                              offset: Offset(0, 12),
+                              color: Colors.black26,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Game Over',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: game.resetGame,
+                              child: const Text('Play Again'),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  MainMenuScreen.route,
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text('Home'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
