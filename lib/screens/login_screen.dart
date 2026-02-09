@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../widgets/winter_background.dart';
 import 'adminscreen.dart';
-import 'gamescreen.dart';
+import 'main_menu.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,7 +49,7 @@ class LoginScreenState extends State<LoginScreen> {
 
   // gost nema nalog , gameScreen ruta
   void continueAsGuest() {
-    Navigator.pushReplacementNamed(context, GameScreen.route);
+    Navigator.pushReplacementNamed(context, MainMenuScreen.route);
   }
 
   @override

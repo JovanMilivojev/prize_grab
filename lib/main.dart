@@ -5,6 +5,7 @@ import 'screens/adminscreen.dart';
 import 'screens/leaderboard.dart';
 import 'screens/shop.dart';
 import 'screens/gamescreen.dart';
+import 'screens/tapscreen.dart';
 
 void main() {
   runApp(const PrizeGrabApp());
@@ -18,7 +19,7 @@ class PrizeGrabApp extends StatelessWidget {
     return MaterialApp(
       title: 'Prize Grab',
       debugShowCheckedModeBanner: false,
-      initialRoute: MainMenuScreen.route,
+      initialRoute: TapScreen.route,
       routes: {
         MainMenuScreen.route: (_) => const MainMenuScreen(),
         GameScreen.route: (_) => const GameScreen(),
@@ -26,6 +27,7 @@ class PrizeGrabApp extends StatelessWidget {
         ShopScreen.route: (_) => const ShopScreen(),
         LoginScreen.route: (_) => const LoginScreen(),
         AdminScreen.route: (_) => const AdminScreen(),
+        TapScreen.route: (_) => const TapScreen(),
       },
     );
   }
