@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/winter_background.dart';
 
-/// ==============================
 /// MODEL: jedan unos na tabeli
-/// ==============================
 class LeaderboardEntry {
   final int rank;
   final String username;
@@ -16,9 +14,7 @@ class LeaderboardEntry {
   });
 }
 
-/// ==============================
-/// SCREEN: Leaderboard (CP2 - UI)
-/// ==============================
+/// Ekran Leaderboard
 class Leaderboard extends StatelessWidget {
   const Leaderboard({super.key});
 
@@ -35,8 +31,8 @@ class Leaderboard extends StatelessWidget {
     LeaderboardEntry(rank: 7, username: 'Nikola Stojanović', score: 510),
   ];
 
-  /// CP2: gost vidi leaderboard ali ne učestvuje
-  /// Kasnije u CP3 ovo dolazi iz Auth-a
+  //gost vidi leaderboard ali ne učestvuje
+
   final bool isGuest = true;
 
   @override
@@ -46,15 +42,12 @@ class Leaderboard extends StatelessWidget {
       /// - postavlja sliku
       /// - overlay
       /// - SafeArea
-      /// Zato sav sadržaj ekrana ide u child.
       body: WinterBackground(
         child: Column(
           children: [
             const SizedBox(height: 10),
 
-            // ==============================
             // BACK dugme (gore levo)
-            // ==============================
             Align(
               alignment: Alignment.centerLeft,
               child: Padding(
@@ -65,9 +58,7 @@ class Leaderboard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // ==============================
             // NASLOV
-            // ==============================
             const Text(
               'Leaderboard',
               style: TextStyle(
@@ -79,9 +70,7 @@ class Leaderboard extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // ==============================
             // CENTRALNA KARTICA SA LISTOM
-            // ==============================
             Expanded(
               child: Center(
                 child: Container(
@@ -105,9 +94,7 @@ class Leaderboard extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      // ==============================
                       // LISTA (scroll)
-                      // ==============================
                       Expanded(
                         child: Scrollbar(
                           thumbVisibility: true,
@@ -121,9 +108,7 @@ class Leaderboard extends StatelessWidget {
                         ),
                       ),
 
-                      // ==============================
-                      // PORUKA ZA GOSTA (CP2 logika)
-                      // ==============================
+                      // PORUKA ZA GOSTA
                       if (isGuest) ...[
                         const SizedBox(height: 10),
                         const Text(
@@ -148,9 +133,8 @@ class Leaderboard extends StatelessWidget {
   }
 }
 
-/// ==============================
 /// BACK BUTTON WIDGET
-/// ==============================
+
 class _BackButton extends StatelessWidget {
   const _BackButton({required this.onTap});
 
@@ -178,9 +162,8 @@ class _BackButton extends StatelessWidget {
   }
 }
 
-/// ==============================
 /// JEDAN RED U LEADERBOARD-U
-/// ==============================
+
 class _LeaderboardRow extends StatelessWidget {
   const _LeaderboardRow({required this.entry});
 

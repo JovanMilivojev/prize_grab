@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../widgets/winter_background.dart';
+import 'adminscreen.dart';
 import 'gamescreen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -30,6 +31,12 @@ class LoginScreenState extends State<LoginScreen> {
   //Klik na login
   void submit() {
     if (formKey.currentState!.validate()) {
+      final emailValue = email.text.trim().toLowerCase();
+      if (isLogin && emailValue == 'admin@prizegrab.com') {
+        Navigator.pushReplacementNamed(context, AdminScreen.route);
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -129,6 +136,7 @@ class LoginScreenState extends State<LoginScreen> {
                                 controller: email,
                                 hint: 'Enter your email',
                                 keyboardType: TextInputType.emailAddress,
+                                showClear: true,
                                 validator: (v) {
                                   final value = (v ?? '').trim();
                                   if (value.isEmpty) return 'Email je obavezan';
@@ -191,6 +199,19 @@ class LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
+
+                              if (isLogin) ...[
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Admin demo: admin@prizegrab.com',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Color(0xFF2563EB),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -312,7 +333,7 @@ class Label extends StatelessWidget {
   }
 }
 
-class IcyField extends StatelessWidget {
+class IcyField extends StatefulWidget {
   const IcyField({
     super.key,
     required this.controller,
@@ -320,6 +341,7 @@ class IcyField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.obscureText = false,
+    this.showClear = false,
   });
 
   final TextEditingController controller;
@@ -327,16 +349,41 @@ class IcyField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final bool obscureText;
+  final bool showClear;
+
+  @override
+  State<IcyField> createState() => _IcyFieldState();
+}
+
+class _IcyFieldState extends State<IcyField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onTextChange);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChange);
+    super.dispose();
+  }
+
+  void _onTextChange() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasText = widget.controller.text.isNotEmpty;
     return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      obscureText: obscureText,
+      controller: widget.controller,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      obscureText: widget.obscureText,
+      enableInteractiveSelection: true,
+      readOnly: false,
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: widget.hint,
         filled: true,
         fillColor: const Color(0xFFF3F3F3),
         contentPadding: const EdgeInsets.symmetric(
@@ -347,6 +394,14 @@ class IcyField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
+        suffixIcon: widget.showClear && hasText
+            ? IconButton(
+                onPressed: () => widget.controller.clear(),
+                icon: const Icon(Icons.clear),
+                color: const Color(0xFF94A3B8),
+                tooltip: 'Clear',
+              )
+            : null,
       ),
     );
   }

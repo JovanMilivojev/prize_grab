@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/main_menu.dart';
 import 'screens/login_screen.dart';
+import 'screens/adminscreen.dart';
 import 'screens/leaderboard.dart';
 import 'screens/shop.dart';
 import 'screens/gamescreen.dart';
@@ -24,6 +25,7 @@ class PrizeGrabApp extends StatelessWidget {
         Leaderboard.route: (_) => const Leaderboard(),
         ShopScreen.route: (_) => const ShopScreen(),
         LoginScreen.route: (_) => const LoginScreen(),
+        AdminScreen.route: (_) => const AdminScreen(),
       },
     );
   }
