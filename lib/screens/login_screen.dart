@@ -46,11 +46,6 @@ class LoginScreenState extends State<LoginScreen> {
     final passwordValue = password.text;
     final usernameValue = user.text.trim();
 
-    if (isLogin && emailValue == 'admin@prizegrab.com') {
-      Navigator.pushReplacementNamed(context, AdminScreen.route);
-      return;
-    }
-
     setState(() => _loading = true);
 
     if (!isLogin && usernameValue.length < 3) {
@@ -69,13 +64,28 @@ class LoginScreenState extends State<LoginScreen> {
       if (isLogin) {
         await _authService.signIn(email: emailValue, password: passwordValue);
 
-        int bonusAmount = 0;
         final uid = _authService.currentUser?.uid;
-        if (uid != null) {
-          try {
-            bonusAmount = await _userService.claimDailyBonus(uid: uid);
-          } catch (_) {}
+        if (uid == null) {
+          throw Exception('Nedostaje UID nakon prijave.');
         }
+
+        final profile = await _userService.getUserProfile(
+          uid,
+          email: emailValue,
+        );
+        if (profile.banned) {
+          await _authService.signOut();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Banovan si.')),
+          );
+          return;
+        }
+
+        int bonusAmount = 0;
+        try {
+          bonusAmount = await _userService.claimDailyBonus(uid: uid);
+        } catch (_) {}
 
         if (!mounted) return;
 
@@ -85,14 +95,17 @@ class LoginScreenState extends State<LoginScreen> {
           ).showSnackBar(SnackBar(content: Text('Daily bonus +$bonusAmount!')));
         }
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login uspesan')));
-
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
+        if (profile.role == 'admin') {
+          Navigator.pushReplacementNamed(context, AdminScreen.route);
         } else {
-          Navigator.pushReplacementNamed(context, MainMenuScreen.route);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login uspesan')),
+          );
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacementNamed(context, MainMenuScreen.route);
+          }
         }
       } else {
         final credential = await _authService.register(
@@ -333,19 +346,6 @@ class LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
-
-                              if (isLogin) ...[
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'Admin demo: admin@prizegrab.com',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFF2563EB),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
