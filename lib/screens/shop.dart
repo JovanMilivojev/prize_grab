@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/winter_background.dart';
+import '../services/user_service.dart';
+import '../services/shop_service.dart';
+import '../models/user_profile.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -13,17 +15,13 @@ class ShopScreen extends StatefulWidget {
 
 class ShopScreenState extends State<ShopScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final UserService _userService = UserService();
+  final ShopService _shopService = ShopService();
 
   // Skrolbar
   final ScrollController scrollController = ScrollController();
 
-  // ID-jevi kupljenih/posedovanih skinova
-  int coins = 450;
-  final Set<String> ownedSkins = {'classic'};
-
   // Lista skinova za grid
-
   late final List<SkinItem> items = [
     const SkinItem(
       id: 'classic',
@@ -65,69 +63,123 @@ class ShopScreenState extends State<ShopScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final user = _auth.currentUser;
+    if (user != null) {
+      _userService.ensureUserDefaults(user.uid, email: user.email);
+    }
+  }
+
+  @override
   void dispose() {
     scrollController.dispose();
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCoins();
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _loadCoins() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
-
+  Future<void> _buySkin(String uid, SkinItem item) async {
     try {
-      final snapshot = await _firestore.collection('users').doc(uid).get();
-      if (!snapshot.exists) return;
-
-      final data = snapshot.data();
-      if (data == null) return;
-
-      final fetchedCoins = (data['coins'] as num?)?.toInt();
-      if (fetchedCoins == null) return;
-
-      if (mounted) {
-        setState(() {
-          coins = fetchedCoins;
-        });
-      }
-    } catch (_) {}
+      await _shopService.buySkin(uid: uid, skinId: item.id, price: item.price);
+      _showSnack('Kupljen: ${item.name}');
+    } on InsufficientFundsException {
+      _showSnack('Nemate dovoljno raspolozivih sredstava.');
+    } catch (e) {
+      _showSnack('Greska: $e');
+    }
   }
 
-  //Klik na buy
-  void buySkin(SkinItem item) {
-    final alreadyOwned = ownedSkins.contains(item.id);
-
-    if (alreadyOwned) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Ovaj skin već imaš.')));
-      return;
+  Future<void> _equipSkin(String uid, SkinItem item) async {
+    try {
+      await _shopService.equipSkin(uid: uid, skinId: item.id);
+    } on NotOwnedException {
+      _showSnack('Skin nije kupljen.');
+    } catch (e) {
+      _showSnack('Greska: $e');
     }
-
-    if (coins < item.price) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Nemaš dovoljno coinova.')));
-      return;
-    }
-
-    setState(() {
-      coins -= item.price;
-      ownedSkins.add(item.id);
-    });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Kupljen: ${item.name}')));
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = _auth.currentUser;
+    if (user == null) {
+      final profile = UserProfile(
+        coins: 0,
+        ownedSkins: {'classic'},
+        equippedSkinId: 'classic',
+      );
+      return _buildScaffold(
+        context,
+        profile: profile,
+        isGuest: true,
+        uid: null,
+      );
+    }
+
+    return StreamBuilder<UserProfile>(
+      stream: _userService.streamUserProfile(user.uid),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          final profile = UserProfile(
+            coins: 0,
+            ownedSkins: {'classic'},
+            equippedSkinId: 'classic',
+          );
+          return _buildScaffold(
+            context,
+            profile: profile,
+            isGuest: false,
+            uid: user.uid,
+            listChild: const Center(
+              child: Text(
+                'Greska pri ucitavanju.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF2563EB),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          final profile = UserProfile(
+            coins: 0,
+            ownedSkins: {'classic'},
+            equippedSkinId: 'classic',
+          );
+          return _buildScaffold(
+            context,
+            profile: profile,
+            isGuest: false,
+            uid: user.uid,
+            listChild: const Center(
+              child: CircularProgressIndicator(color: Color(0xFF1E3A8A)),
+            ),
+          );
+        }
+
+        return _buildScaffold(
+          context,
+          profile: snapshot.data!,
+          isGuest: false,
+          uid: user.uid,
+        );
+      },
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context, {
+    required UserProfile profile,
+    required bool isGuest,
+    required String? uid,
+    Widget? listChild,
+  }) {
     // Stil boja
     const Color primaryBlue = Color(0xFF4FC3F7);
     const Color titleBlue = Color(0xFF1565C0);
@@ -160,12 +212,12 @@ class ShopScreenState extends State<ShopScreen> {
                 right: 14,
                 top: 12,
                 child: CoinBadge(
-                  coins: coins,
+                  coins: profile.coins,
                   background: const Color(0xFFFFD54F),
                 ),
               ),
 
-              /// GLAVNI SADRŽAJ (naslov + grid)
+              /// GLAVNI SADRZAJ (naslov + grid)
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
@@ -190,35 +242,77 @@ class ShopScreenState extends State<ShopScreen> {
 
                         // GRID + SCROLLBAR
                         Expanded(
-                          child: Scrollbar(
-                            controller: scrollController,
-                            thumbVisibility: true,
-                            child: GridView.builder(
-                              controller: scrollController,
-                              padding: const EdgeInsets.only(bottom: 20),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 16,
-                                    crossAxisSpacing: 16,
-                                    childAspectRatio: 0.72,
-                                  ),
-                              itemCount: items.length,
-                              itemBuilder: (context, index) {
-                                final item = items[index];
-                                final isOwned = ownedSkins.contains(item.id);
+                          child: listChild ??
+                              Scrollbar(
+                                controller: scrollController,
+                                thumbVisibility: true,
+                                child: GridView.builder(
+                                  controller: scrollController,
+                                  padding: const EdgeInsets.only(bottom: 20),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 16,
+                                        crossAxisSpacing: 16,
+                                        childAspectRatio: 0.72,
+                                      ),
+                                  itemCount: items.length,
+                                  itemBuilder: (context, index) {
+                                    final item = items[index];
+                                    final isOwned = item.isDefault ||
+                                        profile.ownedSkins.contains(item.id);
+                                    final isEquipped =
+                                        item.id == profile.equippedSkinId;
 
-                                return ShopCard(
-                                  item: item,
-                                  isOwned: isOwned,
-                                  primaryBlue: primaryBlue,
-                                  onBuy: () => buySkin(item),
-                                  coinGifPath: 'assets/gifs/preview.gif',
-                                );
-                              },
+                                    String actionLabel;
+                                    bool actionEnabled;
+                                    VoidCallback? onAction;
+
+                                    if (isGuest) {
+                                      actionLabel = 'Login required';
+                                      actionEnabled = false;
+                                    } else if (isOwned) {
+                                      if (isEquipped) {
+                                        actionLabel = 'Equipped';
+                                        actionEnabled = false;
+                                      } else {
+                                        actionLabel = 'Equip';
+                                        actionEnabled = true;
+                                        onAction = () => _equipSkin(uid!, item);
+                                      }
+                                    } else {
+                                      actionLabel = 'Buy';
+                                      actionEnabled = true;
+                                      onAction = () => _buySkin(uid!, item);
+                                    }
+
+                                    return ShopCard(
+                                      item: item,
+                                      isOwned: isOwned,
+                                      primaryBlue: primaryBlue,
+                                      actionLabel: actionLabel,
+                                      actionEnabled: actionEnabled,
+                                      onAction: onAction,
+                                      showPrice: !isOwned,
+                                      coinGifPath: 'assets/gifs/preview.gif',
+                                    );
+                                  },
+                                ),
+                              ),
+                        ),
+                        if (isGuest) ...[
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Login to buy and equip skins',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF2563EB),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                        ],
                       ],
                     ),
                   ),
@@ -304,7 +398,10 @@ class ShopCard extends StatelessWidget {
   final SkinItem item;
   final bool isOwned;
   final Color primaryBlue;
-  final VoidCallback onBuy;
+  final String actionLabel;
+  final bool actionEnabled;
+  final VoidCallback? onAction;
+  final bool showPrice;
   final String coinGifPath;
 
   const ShopCard({
@@ -312,7 +409,10 @@ class ShopCard extends StatelessWidget {
     required this.item,
     required this.isOwned,
     required this.primaryBlue,
-    required this.onBuy,
+    required this.actionLabel,
+    required this.actionEnabled,
+    required this.onAction,
+    required this.showPrice,
     required this.coinGifPath,
   });
 
@@ -359,7 +459,7 @@ class ShopCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Owned ili cena
-          if (isOwned || item.isDefault)
+          if (isOwned)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -374,7 +474,7 @@ class ShopCard extends StatelessWidget {
                 ),
               ),
             )
-          else
+          else if (showPrice)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -397,12 +497,12 @@ class ShopCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Buy dugme (plavo kao Play Game)
+          // Akcija
           SizedBox(
             width: double.infinity,
             height: 40,
             child: ElevatedButton(
-              onPressed: (isOwned || item.isDefault) ? null : onBuy,
+              onPressed: actionEnabled ? onAction : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryBlue,
                 foregroundColor: Colors.white,
@@ -413,7 +513,7 @@ class ShopCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                (isOwned || item.isDefault) ? 'Owned' : 'Buy',
+                actionLabel,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),

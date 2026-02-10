@@ -174,7 +174,11 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   // gost nema nalog , gameScreen ruta
-  void continueAsGuest() {
+  Future<void> continueAsGuest() async {
+    try {
+      await _authService.signOut();
+    } catch (_) {}
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, MainMenuScreen.route);
   }
 
