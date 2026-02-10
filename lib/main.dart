@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 import 'screens/main_menu.dart';
 import 'screens/login_screen.dart';
 import 'screens/adminscreen.dart';
@@ -7,7 +10,11 @@ import 'screens/shop.dart';
 import 'screens/gamescreen.dart';
 import 'screens/tapscreen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const PrizeGrabApp());
 }
 

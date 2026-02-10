@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "411190432970",
+    "project_id": "prizegrab-14922",
+    "storage_bucket": "prizegrab-14922.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:411190432970:android:3e07f39d8b051254815033",
+        "android_client_info": {
+          "package_name": "com.example.prize_grab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAabLgHgTVmt93syUfxC0XFoUPrZe_LQA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

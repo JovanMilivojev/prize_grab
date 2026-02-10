@@ -1,6 +1,10 @@
-import 'package:flutter/gestures.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../widgets/winter_background.dart';
+import '../services/auth_service.dart';
+import '../services/user_service.dart';
 import 'adminscreen.dart';
 import 'main_menu.dart';
 
@@ -20,6 +24,10 @@ class LoginScreenState extends State<LoginScreen> {
   final password = TextEditingController();
   final user = TextEditingController();
 
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  bool _loading = false;
+
   @override
   void dispose() {
     email.dispose();
@@ -29,21 +37,125 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   //Klik na login
-  void submit() {
-    if (formKey.currentState!.validate()) {
-      final emailValue = email.text.trim().toLowerCase();
-      if (isLogin && emailValue == 'admin@prizegrab.com') {
-        Navigator.pushReplacementNamed(context, AdminScreen.route);
-        return;
-      }
+  Future<void> submit() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isLogin ? 'Login (demo) uspesan' : 'Registracija (demo) uspesna',
-          ),
-        ),
-      );
+    final emailValue = email.text.trim().toLowerCase();
+    final passwordValue = password.text;
+    final usernameValue = user.text.trim();
+
+    if (isLogin && emailValue == 'admin@prizegrab.com') {
+      Navigator.pushReplacementNamed(context, AdminScreen.route);
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    if (!isLogin && usernameValue.length < 3) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username min 3 karaktera')),
+        );
+      }
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        await _authService.signIn(email: emailValue, password: passwordValue);
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login uspesan')));
+
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainMenuScreen.route);
+        }
+      } else {
+        final credential = await _authService.register(
+          email: emailValue,
+          password: passwordValue,
+        );
+
+        final uid = credential.user?.uid;
+        if (uid == null) {
+          throw Exception('Neuspesna registracija (nedostaje UID).');
+        }
+
+        try {
+          await _userService
+              .createUserProfile(
+                uid: uid,
+                email: emailValue,
+                username: usernameValue,
+              )
+              .timeout(const Duration(seconds: 8));
+        } on TimeoutException {
+          _userService.createUserProfile(
+            uid: uid,
+            email: emailValue,
+            username: usernameValue,
+          );
+        }
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Nalog kreiran')));
+
+        Navigator.pushReplacementNamed(context, MainMenuScreen.route);
+      }
+    } on FirebaseAuthException catch (e) {
+      final message = _mapAuthMessage(e);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        final message = e.message ?? e.code;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Greska u bazi: $message')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Greska: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  String _mapAuthMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'Email je vec registrovan.';
+      case 'invalid-email':
+        return 'Email nije validan.';
+      case 'weak-password':
+        return 'Lozinka je preslaba (min 6).';
+      case 'user-not-found':
+        return 'Ne postoji nalog za ovaj email.';
+      case 'wrong-password':
+        return 'Pogresna lozinka.';
+      default:
+        return 'Auth greska: ${e.message ?? e.code}';
     }
   }
 
@@ -171,7 +283,7 @@ class LoginScreenState extends State<LoginScreen> {
                                 width: double.infinity,
                                 height: 52,
                                 child: ElevatedButton(
-                                  onPressed: submit,
+                                  onPressed: _loading ? null : submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4FC3F7),
                                     foregroundColor: Colors.white,
@@ -181,7 +293,11 @@ class LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    isLogin ? 'Login' : 'Create Account',
+                                    _loading
+                                        ? 'Please wait...'
+                                        : (isLogin
+                                              ? 'Login'
+                                              : 'Create Account'),
                                   ),
                                 ),
                               ),
