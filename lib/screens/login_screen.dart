@@ -69,7 +69,21 @@ class LoginScreenState extends State<LoginScreen> {
       if (isLogin) {
         await _authService.signIn(email: emailValue, password: passwordValue);
 
+        int bonusAmount = 0;
+        final uid = _authService.currentUser?.uid;
+        if (uid != null) {
+          try {
+            bonusAmount = await _userService.claimDailyBonus(uid: uid);
+          } catch (_) {}
+        }
+
         if (!mounted) return;
+
+        if (bonusAmount > 0) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Daily bonus +$bonusAmount!')));
+        }
 
         ScaffoldMessenger.of(
           context,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/winter_background.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -10,6 +12,9 @@ class ShopScreen extends StatefulWidget {
 }
 
 class ShopScreenState extends State<ShopScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   // Skrolbar
   final ScrollController scrollController = ScrollController();
 
@@ -63,6 +68,34 @@ class ShopScreenState extends State<ShopScreen> {
   void dispose() {
     scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCoins();
+  }
+
+  Future<void> _loadCoins() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final snapshot = await _firestore.collection('users').doc(uid).get();
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data();
+      if (data == null) return;
+
+      final fetchedCoins = (data['coins'] as num?)?.toInt();
+      if (fetchedCoins == null) return;
+
+      if (mounted) {
+        setState(() {
+          coins = fetchedCoins;
+        });
+      }
+    } catch (_) {}
   }
 
   //Klik na buy
