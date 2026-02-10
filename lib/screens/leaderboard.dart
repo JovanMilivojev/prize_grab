@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/winter_background.dart';
+import '../services/score_service.dart';
 
 /// MODEL: jedan unos na tabeli
 class LeaderboardEntry {
@@ -20,23 +23,9 @@ class Leaderboard extends StatelessWidget {
 
   static const route = '/leaderboard';
 
-  /// CP2: Mock podaci (kasnije u CP3 iz Firestore-a)
-  static const List<LeaderboardEntry> _mockData = [
-    LeaderboardEntry(rank: 1, username: 'Jovan Milivojev', score: 1250),
-    LeaderboardEntry(rank: 2, username: 'Igor Mirković', score: 980),
-    LeaderboardEntry(rank: 3, username: 'Marko Petrović', score: 850),
-    LeaderboardEntry(rank: 4, username: 'Ana Jovanović', score: 720),
-    LeaderboardEntry(rank: 5, username: 'Stefan Nikolić', score: 650),
-    LeaderboardEntry(rank: 6, username: 'Jelena Đorđević', score: 580),
-    LeaderboardEntry(rank: 7, username: 'Nikola Stojanović', score: 510),
-  ];
-
-  //gost vidi leaderboard ali ne učestvuje
-
-  final bool isGuest = true;
-
   @override
   Widget build(BuildContext context) {
+    final bool isGuest = FirebaseAuth.instance.currentUser == null;
     return Scaffold(
       /// WinterBackground je wrapper:
       /// - postavlja sliku
@@ -96,15 +85,68 @@ class Leaderboard extends StatelessWidget {
                     children: [
                       // LISTA (scroll)
                       Expanded(
-                        child: Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView.builder(
-                            itemCount: _mockData.length,
-                            itemBuilder: (context, index) {
-                              final entry = _mockData[index];
-                              return _LeaderboardRow(entry: entry);
-                            },
-                          ),
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: ScoreService().topScoresStream(limit: 7),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text(
+                                  'Greska pri ucitavanju: ${snapshot.error}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF2563EB),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF1E3A8A),
+                                ),
+                              );
+                            }
+
+                            final docs = snapshot.data?.docs ?? [];
+                            if (docs.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  'No scores yet',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF2563EB),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return Scrollbar(
+                              thumbVisibility: true,
+                              child: ListView.builder(
+                                itemCount: docs.length,
+                                itemBuilder: (context, index) {
+                                  final data =
+                                      docs[index].data()
+                                          as Map<String, dynamic>;
+                                  final username =
+                                      data['username']?.toString() ?? 'Unknown';
+                                  final score =
+                                      (data['score'] as num?)?.toInt() ?? 0;
+                                  final entry = LeaderboardEntry(
+                                    rank: index + 1,
+                                    username: username,
+                                    score: score,
+                                  );
+                                  return _LeaderboardRow(entry: entry);
+                                },
+                              ),
+                            );
+                          },
                         ),
                       ),
 

@@ -5,6 +5,7 @@ import '../widgets/round_menu_button.dart';
 import 'main_menu.dart';
 import '../igrica/prize_grab_game.dart';
 import 'package:flame/game.dart';
+import '../services/score_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -17,16 +18,37 @@ class GameScreen extends StatefulWidget {
 
 class GameScreenState extends State<GameScreen> {
   late final PrizeGrabGame game;
+  bool _scoreSubmitted = false;
+  late final VoidCallback _gameOverListener;
 
   @override
   void initState() {
     super.initState();
     game = PrizeGrabGame();
+    _gameOverListener = _handleGameOverChange;
+    game.isGameOver.addListener(_gameOverListener);
   }
 
   @override
   void dispose() {
+    game.isGameOver.removeListener(_gameOverListener);
     super.dispose();
+  }
+
+  void _handleGameOverChange() {
+    if (game.isGameOver.value) {
+      _submitScoreOnce();
+    } else {
+      _scoreSubmitted = false;
+    }
+  }
+
+  Future<void> _submitScoreOnce() async {
+    if (_scoreSubmitted) return;
+    _scoreSubmitted = true;
+    try {
+      await ScoreService().submitScore(score: game.score.value);
+    } catch (_) {}
   }
 
   @override
